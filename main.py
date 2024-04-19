@@ -172,9 +172,10 @@ async def process_text_messages(message: types.Message, state: FSMContext):
     types.InlineKeyboardButton('Наш Twitter🕊️', url = 'https://twitter.com/NotMellTon')
 ]]))
     elif message.text == "Персональная ссылка для приглашений 👥":
-        await message.answer_photo(types.InputFile('pictures/refs.jpg'), """
+        await message.answer_photo(types.InputFile('pictures/refs.jpg'), f"""
 Твоя персональная ссылка,по которой можешь приглашать друзей.
 Каждый друг +200 $NOTMELL тебе на баланс!
+Можешь приглашать друзей по своей персональной ссылке: {ref_user.ref_url}
 
 Все в твоих руках!
 """, reply_markup = invite_button(message.from_id))
