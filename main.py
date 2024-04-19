@@ -7,13 +7,11 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils.exceptions import BadRequest
 from db import session, User
-import re
 
 API_TOKEN = '7089086031:AAELSrUv4Cwkc6PFyKNTLSUmR4nHo73OJSk' 
 
 class Features(StatesGroup):
     wallet = State()
-    twitter_url = State()
 
 
 # Включаем логирование для отслеживания ошибок
@@ -188,11 +186,6 @@ async def set_wallet(message: types.Message, state: FSMContext):
     ref_user = session.query(User).filter_by(id = message.from_id).first()
     ref_user.wallet = wallet_address
     session.commit()
-    await state.finish()
-
-@dp.message_handler(state = Features.wallet)
-async def twitter_url(message: types.Message, state: FSMContext):
-    await message.answer("Ссылка передана на обработку, спасибо")
     await state.finish()
 
 if __name__ == '__main__':
