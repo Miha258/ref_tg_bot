@@ -114,7 +114,7 @@ async def send_airdrop_info(chat_id):
 def invite_button(chat_id):
     ref_user = session.query(User).filter_by(id = chat_id).first()
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("Пригласить друга 👥", switch_inline_query = ref_user.ref_url))
+    markup.add(InlineKeyboardButton("Пригласить друга 👥", switch_inline_query_current_chat = ref_user.ref_url))
     return markup
 
 # Обработчик текстовых сообщений
