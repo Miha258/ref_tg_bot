@@ -181,8 +181,8 @@ async def process_text_messages(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state = Features.wallet)
 async def set_wallet(message: types.Message, state: FSMContext):
-    wallet_address = message.text
     await message.answer("Кошелек успешно установлен!✅")
+    wallet_address = message.text
     ref_user = session.query(User).filter_by(id = message.from_id).first()
     ref_user.wallet = wallet_address
     session.commit()
