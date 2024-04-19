@@ -20,7 +20,7 @@ class Features(StatesGroup):
 logging.basicConfig(level=logging.INFO)
 
 # Инициализируем бот и диспетчер
-bot = Bot(token=API_TOKEN)
+bot = Bot(token=API_TOKEN, parse_mode = "html")
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage = storage)
 
@@ -53,10 +53,11 @@ async def send_welcome(message: types.Message, state: FSMContext):
             await send_airdrop_info(chat_id)
         except BadRequest:
             user_name = message.from_user.first_name
-            await message.reply(f"Привет, {user_name}!👋\n"
-                                f"Для участия в AIRDROP, необходимо подписаться на канал NOT MELL: {channel_username}\n"
-                                "Нажми кнопку ниже, чтобы проверить подписку.",
-                                reply_markup=subscribe_button())
+            await message.answer(f"""
+Привет {user_name}👋
+Для участия в AIRDROP,необходимо подписаться на канал NOT MELL: {channel_username}
+{channel_username}
+""", reply_markup=subscribe_button())
 
 # Функция для создания кнопки "Проверить подписку"
 def subscribe_button():
@@ -73,8 +74,7 @@ async def check_subscription(query: types.CallbackQuery):
         await query.message.answer("Подписка подтверждена!")
         await send_airdrop_info(chat_id)
     except BadRequest:
-        await query.message.answer("ТА НУ НЕЕ, ты все еще не подписался. "
-                                                  f"Подпишись сначала на наш канал: {channel_username} 🤝")
+        await query.message.answer(f"ТА НУ НЕЕ,ты все еще не подписался. Подпишись сначала на наш канал: {channel_username} 🤝")
 
 # Функция для отправки информации о AIRDROP
 async def send_airdrop_info(chat_id):
@@ -91,15 +91,20 @@ async def send_airdrop_info(chat_id):
         KeyboardButton("Персональная ссылка для приглашений 👥")
     ]])
     await bot.send_message(chat_id, "🔝 Главное Меню", reply_markup = keyboard)
-    await bot.send_message(chat_id, "AIRDROP NOT MELL СТАРТОВАЛ!\n"
-                                    "Получай 200 токенов $NOTMELL за каждого приведенного друга 💰\n"
-                                    "Самые легкие условия поучавствовать в большой истории запуска!\n"
-                                    "Никаких долгих ожиданий.\n"
-                                    "Выпуск мем-токена очень близко.\n"
-                                    "Стань частью крутой истории $NOTMELL\n"
-                                    "Да начнется воозня!\n"
-                                    f"{channel_username}",
-                           reply_markup = invite_button(chat_id))
+    await bot.send_message(chat_id, f"""
+<strong>AIRDROP NOT MELL СТАРТОВАЛ!</strong>
+
+Получай 200 токенов  $NOTMELL за каждого приведенного друга 💰
+Самые легкие условия поучавствовать в большой истории запуска!
+
+<strong>Никаких долгих ожиданий.
+Выпуск мем-токена очень близко.
+</strong>
+Стань частью крутой истории $NOTMELL
+
+<strong>Да начнется воозня!</strong>
+{channel_username}
+""", reply_markup = invite_button(chat_id))
 
 # Функция для создания кнопки "Пригласить друга"
 def invite_button(chat_id):
@@ -116,7 +121,7 @@ async def process_text_messages(message: types.Message, state: FSMContext):
         await message.answer(f"""
 Для участия в раздаче токенов $NOTMELL выполни 2 простых правила. 
 
-1.Быть подписаным на оффициальный канал NOTMELL @not_mell_ton
+1.Быть подписаным на оффициальный канал NOTMELL {channel_username}
 
 2.Пригласить всех кентов и кентих в нашу историческую возню!
 
@@ -124,19 +129,23 @@ async def process_text_messages(message: types.Message, state: FSMContext):
 
 Можешь приглашать друзей по своей персональной ссылке: {ref_user.ref_url}
 
+<strong>
 Это еще не все!
 Что бы поучаствовать в еще одной раздаче $$$$ выполни задания во вкладке Twitter🍿
+</strong>
 
 """)
     elif message.text == "Мой Баланс💸":
         await message.answer(f"""
 Твой баланс: {ref_user.balance} $NOTMELL
-1 друг = 200 $NOTMELL
+<strong>1 друг = 200 $NOTMELL</strong>
 
 Персональная ссылка для приглашений: {ref_user.ref_url}
 """, reply_markup = invite_button(message.from_id))
     elif message.text == "Добавить кошелек🎒":
         await message.answer("""
+<strong>Куда будешь дроп получать?</strong>                    
+
 Добавь свой некастодиальный кошелек в сети TON.
 К примеру это может быть: Tonkeeper\Tonhub\MyTonWallet
 
@@ -148,7 +157,7 @@ async def process_text_messages(message: types.Message, state: FSMContext):
         await state.set_state(Features.wallet)
     elif message.text == "Twitter (ранний мини-дроп)🍿":
         await message.answer("""
-Всего один дроп?
+<strong>Всего один дроп?</strong>
 АХАХАХ,у нас их два.
 Подпишись на наш Twitter и сделай репост любой записи себе.
 Ты станешь участником еще одной раздачи. 
