@@ -28,7 +28,7 @@ dp = Dispatcher(bot, storage = storage)
 channel_username = "@not_mell_ton"
 
 # Обработчик команды /start
-@dp.message_handler(commands = ['/start'], state = "*")
+@dp.message_handler(commands = ['start'], state = "*")
 async def send_welcome(message: types.Message, state: FSMContext):
     if message.chat.type == 'private':
         await state.finish()
