@@ -146,6 +146,7 @@ async def process_text_messages(message: types.Message, state: FSMContext):
 Персональная ссылка для приглашений: {ref_user.ref_url}
 """, reply_markup = invite_button(message.from_id))
     elif message.text == "Добавить кошелек🎒":
+        await state.set_state(Features.wallet)
         await message.answer_photo(types.InputFile('pictures/wallet.jpg'), caption = """
 <strong>Куда будешь дроп получать?</strong>                    
 
@@ -157,7 +158,6 @@ async def process_text_messages(message: types.Message, state: FSMContext):
 
 Добавь адрес твоего кошелька в сети TON:
         """)
-        await state.set_state(Features.wallet)
     elif message.text == "Twitter (ранний мини-дроп)🍿":
         await message.answer_photo(types.InputFile('pictures/twitter.jpg'), caption = """
 <strong>Всего один дроп?</strong>
