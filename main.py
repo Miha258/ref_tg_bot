@@ -11,7 +11,7 @@ from db import session, User
 API_TOKEN = '7089086031:AAELSrUv4Cwkc6PFyKNTLSUmR4nHo73OJSk' 
 
 class Features(StatesGroup):
-    wallet = State()
+    WALLET = State()
 
 
 # Включаем логирование для отслеживания ошибок
@@ -115,6 +115,15 @@ def invite_button(chat_id):
     markup.add(InlineKeyboardButton("Пригласить друга 👥", url = "https://t.me/share/url?url=" + ref_user.ref_url))
     return markup
 
+@dp.message_handler(content_types=types.ContentType.TEXT, state = Features.WALLET)
+async def set_wallet(message: types.Message, state: FSMContext):
+    await message.answer("Кошелек успешно установлен!✅")
+    wallet_address = message.text
+    ref_user = session.query(User).filter_by(id = message.from_id).first()
+    ref_user.wallet = wallet_address
+    session.commit()
+    await state.finish()
+
 # Обработчик текстовых сообщений
 @dp.message_handler(content_types=types.ContentType.TEXT, state = "*")
 async def process_text_messages(message: types.Message, state: FSMContext):
@@ -146,7 +155,6 @@ async def process_text_messages(message: types.Message, state: FSMContext):
 Персональная ссылка для приглашений: {ref_user.ref_url}
 """, reply_markup = invite_button(message.from_id))
     elif message.text == "Добавить кошелек🎒":
-        await state.set_state(Features.wallet)
         await message.answer_photo(types.InputFile('pictures/wallet.jpg'), caption = """
 <strong>Куда будешь дроп получать?</strong>                    
 
@@ -158,6 +166,7 @@ async def process_text_messages(message: types.Message, state: FSMContext):
 
 Добавь адрес твоего кошелька в сети TON:
         """)
+        await state.set_state(Features.WALLET)
     elif message.text == "Twitter (ранний мини-дроп)🍿":
         await message.answer_photo(types.InputFile('pictures/twitter.jpg'), caption = """
 <strong>Всего один дроп?</strong>
@@ -177,16 +186,6 @@ async def process_text_messages(message: types.Message, state: FSMContext):
 
 Все в твоих руках!
 """, reply_markup = invite_button(message.from_id))
-        
-
-@dp.message_handler(state = Features.wallet)
-async def set_wallet(message: types.Message, state: FSMContext):
-    await message.answer("Кошелек успешно установлен!✅")
-    wallet_address = message.text
-    ref_user = session.query(User).filter_by(id = message.from_id).first()
-    ref_user.wallet = wallet_address
-    session.commit()
-    await state.finish()
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
