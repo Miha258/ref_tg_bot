@@ -114,7 +114,7 @@ async def send_airdrop_info(chat_id):
 def invite_button(chat_id):
     ref_user = session.query(User).filter_by(id = chat_id).first()
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("Пригласить друга 👥", switch_inline_query_current_chat = ref_user.ref_url))
+    markup.add(InlineKeyboardButton("Пригласить друга 👥", url = "https://t.me/share/url?url=" + ref_user.ref_url))
     return markup
 
 # Обработчик текстовых сообщений
@@ -182,17 +182,12 @@ async def process_text_messages(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state = Features.wallet)
 async def set_wallet(message: types.Message, state: FSMContext):
-    pattern = r'^[0-9a-fA-F]{64}$'
     wallet_address = message.text
- 
-    if re.match(pattern, wallet_address):
-        await message.answer("Кошелек успешно установлен!")
-        ref_user = session.query(User).filter_by(id = message.from_id).first()
-        ref_user.wallet = wallet_address
-        session.commit()
-        await state.finish()
-    else:
-        await message.answer('Неверный адрес кошелька, повторите попытку:')
+    await message.answer("Кошелек успешно установлен!✅")
+    ref_user = session.query(User).filter_by(id = message.from_id).first()
+    ref_user.wallet = wallet_address
+    session.commit()
+    await state.finish()
 
 @dp.message_handler(state = Features.wallet)
 async def twitter_url(message: types.Message, state: FSMContext):
