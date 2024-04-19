@@ -9,7 +9,7 @@ from aiogram.utils.exceptions import BadRequest
 from db import session, User
 import re
 
-API_TOKEN = '7089086031:AAELSrUv4Cwkc6PFyKNTLSUmR4nHo73OJSk'  # Замените на свой API токен
+API_TOKEN = '7089086031:AAELSrUv4Cwkc6PFyKNTLSUmR4nHo73OJSk' 
 
 class Features(StatesGroup):
     wallet = State()
@@ -28,11 +28,29 @@ dp = Dispatcher(bot, storage = storage)
 channel_username = "@not_mell_ton"
 
 # Обработчик команды /start
-@dp.message_handler(commands=['start'], state = "*")
+@dp.message_handler(commands = ['/start'], state = "*")
 async def send_welcome(message: types.Message, state: FSMContext):
-    await state.finish()
     if message.chat.type == 'private':
+        await state.finish()
+        _bot = await bot.get_me()
+        if not session.query(User).filter_by(id = message.from_id).first():
+            user = User(id = message.from_id, username = message.from_user.username, ref_url = f"https://t.me/{_bot.username}?start={message.from_id}")
+            session.add(user)
+
         chat_id = message.chat.id
+        try:
+            user = await bot.get_chat_member(channel_username, chat_id)
+            if user.status == 'left' or user.status == 'kicked':
+                raise BadRequest("Member has left")
+            else:
+                await send_airdrop_info(chat_id)
+        except BadRequest as e:
+            user_name = message.from_user.first_name
+            return await message.answer(f"""
+Привет {user_name}👋
+Для участия в AIRDROP,необходимо подписаться на канал NOT MELL: {channel_username}
+        """, reply_markup=subscribe_button())
+            
         ref_start = message.text.split(" ")
         ref_id = int(ref_start[1]) if len(ref_start) == 2 else None
 
@@ -43,21 +61,6 @@ async def send_welcome(message: types.Message, state: FSMContext):
                 ref_user.balance = ref_user.balance + 200
                 session.commit()
                 await bot.send_message(ref_id, f"Пользователь {message.from_user.username} успешно прошел по вашей ссылке")
-        else:
-            _bot = await bot.get_me()
-            if not session.query(User).filter_by(id = message.from_id).first():
-                user = User(id = message.from_id, username = message.from_user.username, ref_url = f"https://t.me/{_bot.username}?start={message.from_id}")
-                session.add(user)
-        try:
-            await bot.get_chat_member(channel_username, chat_id)
-            await send_airdrop_info(chat_id)
-        except BadRequest:
-            user_name = message.from_user.first_name
-            await message.answer(f"""
-Привет {user_name}👋
-Для участия в AIRDROP,необходимо подписаться на канал NOT MELL: {channel_username}
-{channel_username}
-""", reply_markup=subscribe_button())
 
 # Функция для создания кнопки "Проверить подписку"
 def subscribe_button():
@@ -70,7 +73,9 @@ def subscribe_button():
 async def check_subscription(query: types.CallbackQuery):
     chat_id = query.message.chat.id
     try:
-        await bot.get_chat_member(channel_username, chat_id)
+        user = await bot.get_chat_member(channel_username, chat_id)
+        if user.status == 'left' or user.status == 'kicked':
+            raise BadRequest("Member has left")
         await query.message.answer("Подписка подтверждена!")
         await send_airdrop_info(chat_id)
     except BadRequest:
@@ -79,7 +84,6 @@ async def check_subscription(query: types.CallbackQuery):
 # Функция для отправки информации о AIRDROP
 async def send_airdrop_info(chat_id):
     # Здесь можно добавить отправку картинки, если у вас есть URL к картинке
-
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True, keyboard = [[
         KeyboardButton("AirDrop Правила📕"),
         KeyboardButton("Мой Баланс💸")
@@ -91,7 +95,7 @@ async def send_airdrop_info(chat_id):
         KeyboardButton("Персональная ссылка для приглашений 👥")
     ]])
     await bot.send_message(chat_id, "🔝 Главное Меню", reply_markup = keyboard)
-    await bot.send_message(chat_id, f"""
+    await bot.send_photo(chat_id, photo = types.InputFile('pictures/main.jpg'), caption = f"""
 <strong>AIRDROP NOT MELL СТАРТОВАЛ!</strong>
 
 Получай 200 токенов  $NOTMELL за каждого приведенного друга 💰
@@ -110,15 +114,16 @@ async def send_airdrop_info(chat_id):
 def invite_button(chat_id):
     ref_user = session.query(User).filter_by(id = chat_id).first()
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("Пригласить друга 👥", switch_inline_query=ref_user.ref_url))
+    markup.add(InlineKeyboardButton("Пригласить друга 👥", switch_inline_query = ref_user.ref_url))
     return markup
 
 # Обработчик текстовых сообщений
-@dp.message_handler(content_types=types.ContentType.TEXT)
+@dp.message_handler(content_types=types.ContentType.TEXT, state = "*")
 async def process_text_messages(message: types.Message, state: FSMContext):
+    await state.finish()
     ref_user = session.query(User).filter_by(id = message.from_id).first() 
     if message.text == "AirDrop Правила📕":
-        await message.answer(f"""
+        await message.answer_photo(types.InputFile('pictures/terms.jpg'), caption = f"""
 Для участия в раздаче токенов $NOTMELL выполни 2 простых правила. 
 
 1.Быть подписаным на оффициальный канал NOTMELL {channel_username}
@@ -136,14 +141,14 @@ async def process_text_messages(message: types.Message, state: FSMContext):
 
 """)
     elif message.text == "Мой Баланс💸":
-        await message.answer(f"""
+        await message.answer_photo(types.InputFile('pictures/balance.jpg'), caption = f"""
 Твой баланс: {ref_user.balance} $NOTMELL
 <strong>1 друг = 200 $NOTMELL</strong>
 
 Персональная ссылка для приглашений: {ref_user.ref_url}
 """, reply_markup = invite_button(message.from_id))
     elif message.text == "Добавить кошелек🎒":
-        await message.answer("""
+        await message.answer_photo(types.InputFile('pictures/wallet.jpg'), caption = """
 <strong>Куда будешь дроп получать?</strong>                    
 
 Добавь свой некастодиальный кошелек в сети TON.
@@ -156,16 +161,18 @@ async def process_text_messages(message: types.Message, state: FSMContext):
         """)
         await state.set_state(Features.wallet)
     elif message.text == "Twitter (ранний мини-дроп)🍿":
-        await message.answer("""
+        await message.answer_photo(types.InputFile('pictures/twitter.jpg'), caption = """
 <strong>Всего один дроп?</strong>
 АХАХАХ,у нас их два.
 Подпишись на наш Twitter и сделай репост любой записи себе.
 Ты станешь участником еще одной раздачи. 
 
 Отправь ссылку на репост который сделал в твиттере:
-""")
+""", reply_markup = types.InlineKeyboardMarkup(inline_keyboard = [[
+    types.InlineKeyboardButton('Наш Twitter🕊️', url = 'https://twitter.com/NotMellTon')
+]]))
     elif message.text == "Персональная ссылка для приглашений 👥":
-        await message.answer("""
+        await message.answer_photo(types.InputFile('pictures/refs.jpg'), """
 Твоя персональная ссылка,по которой можешь приглашать друзей.
 Каждый друг +200 $NOTMELL тебе на баланс!
 
