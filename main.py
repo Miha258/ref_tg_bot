@@ -31,8 +31,9 @@ async def send_welcome(message: types.Message, state: FSMContext):
     if message.chat.type == 'private':
         await state.finish()
         _bot = await bot.get_me()
+        _user = None
         if not session.query(User).filter_by(id = message.from_id).first():
-            user = User(id = message.from_id, username = message.from_user.username, ref_url = f"https://t.me/{_bot.username}?start={message.from_id}")
+            _user = User(id = message.from_id, username = message.from_user.username, ref_url = f"https://t.me/{_bot.username}?start={message.from_id}")
             session.add(user)
 
         chat_id = message.chat.id
@@ -55,6 +56,7 @@ async def send_welcome(message: types.Message, state: FSMContext):
         if ref_id:
             if ref_id != message.from_id:
                 ref_user = session.query(User).filter_by(id = ref_id).first()
+                ref_user = ref_user if ref_user else _user
                 ref_user.ref_count = ref_user.ref_count + 1
                 ref_user.balance = ref_user.balance + 200
                 session.commit()
@@ -189,3 +191,4 @@ async def process_text_messages(message: types.Message, state: FSMContext):
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
+    
